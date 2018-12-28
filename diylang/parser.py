@@ -15,7 +15,40 @@ def parse(source):
     """Parse string representation of one *single* expression
     into the corresponding Abstract Syntax Tree."""
 
-    raise NotImplementedError("DIY")
+    source = remove_comments(source).strip()
+
+    if source == '#t':
+        return True;
+
+    if source == '#f':
+        return False
+
+    if source.isdigit():
+        return int(source)
+
+    if source[0] == '(':
+        paren = find_matching_paren(source);
+        if paren < len(source) - 1:
+            raise DiyLangError('Expected EOF')
+
+        return [parse(exp) for exp in split_exps(source[1:paren])]
+
+    if source[0] == "'":
+        return [ 'quote', parse(source[1:]) ]
+
+    if source[0] == '"':
+        closing = find_matching_quote(source)
+
+        if closing >= len(source):
+            raise DiyLangError('Unclosed string: %s' % source)
+
+        if closing < len(source)-1:
+            raise DiyLangError('Expected EOF')
+
+        return String(source[1:closing])
+
+    return source
+    #raise NotImplementedError("DIY")
 
 #
 # Below are a few useful utility functions. These should come in handy when
@@ -40,12 +73,32 @@ def find_matching_paren(source, start=0):
         pos += 1
         if len(source) == pos:
             raise DiyLangError("Incomplete expression: %s" % source[start:])
+        if source[pos] == '"':
+            pos = find_matching_quote(source, pos)
         if source[pos] == '(':
             open_brackets += 1
         if source[pos] == ')':
             open_brackets -= 1
     return pos
 
+def find_matching_quote(source, start=0):
+    """Given a string and the index of an opening quote, determines
+    the index of the matching closing quote. Supports escaped quotes"""
+
+    assert source[start] == '"'
+    pos = start+1
+    l = len(source)
+    while pos < l:
+        if source[pos] == '"':
+            return pos
+
+        if source[pos] == '\\':
+            pos += 1
+
+        pos += 1
+
+    return pos
+    raise DiyLangError('Expected EOF')
 
 def split_exps(source):
     """Splits a source string into sub expressions
@@ -78,6 +131,9 @@ def first_expression(source):
     elif source[0] == "(":
         last = find_matching_paren(source)
         return source[:last + 1], source[last + 1:]
+    elif source[0] == '"':
+        last = find_matching_quote(source)
+        return source[:last+1], source[last+1:]
     else:
         match = re.match(r"^[^\s)(']+", source)
         end = match.end()
