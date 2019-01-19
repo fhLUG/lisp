@@ -6,3 +6,117 @@
 
 ;; DIY -- Implement the rest of your standard library
 ;; here as part 7 of the workshop.
+
+(defn or (a b)
+			(if a a b))
+; alternative implementation:
+;(defn or (a b)
+;			(if a #t b)))
+
+(defn and (a b)
+			(if a b a))
+
+(defn xor (a b)
+			(if a (not b) b))
+
+(defn >= (a b)
+			(or
+				(> a b)
+				(eq a b)))
+
+(defn <= (a b)
+			(not (> a b)))
+
+(defn < (a b)
+			(not (>= a b)))
+
+(defn length (xs)
+			(if (empty xs)
+				0
+				(+ 1 (length (tail xs)))))
+
+(defn range (lb ub)
+			(if (< ub lb)
+				'()
+				(cons
+					lb
+					(range (+ 1 lb) ub))))
+
+(defn cumsum (int)
+			(sum (range 1 int)))
+
+; helper function to convert a single element into a list
+(defn list (x) (cons x '()))
+
+(defn append (xs ys)
+			(if (empty xs)
+				ys
+				(cons (head xs) (append (tail xs) ys))))
+
+(defn reverse (xs)
+			(if (empty xs)
+				xs
+				(append
+					(reverse (tail xs))
+					(list (head xs)))))
+
+(defn filter (pred xs)
+			(if (empty xs)
+				xs
+				(let
+					((h (head xs)))
+					(append
+						(if (pred h) (list h) '())
+						(filter pred (tail xs))))))
+
+(defn map (f xs)
+			(if (empty xs)
+				; must be a list (cannot be xs), otherwise some special cases would not work with strings
+				'()
+				(cons
+					(f (head xs))
+					(map f (tail xs)))))
+
+(defn reduce (f acc xs)
+			(if (empty xs)
+				acc
+				(reduce
+					f
+					(f acc (head xs))
+					(tail xs))))
+
+; standard sum implementation:
+;(defn sum (xs)
+;			(if (empty xs)
+;				0
+;				(+ (sum (tail xs)) (head xs))))
+
+; define + as itself (using the language level/pythonic + to implement a diy-level + function/lambda/closure)
+(defn + (a b) (+ a b))
+(defn sum (xs) (reduce + 0 xs))
+
+(defn cmp (pred x) (lambda (y) (pred y x)))
+(defn pivot (pred xs)
+			(filter
+				(cmp pred (head xs))
+				(tail xs)))
+(defn neg/2 (f) (lambda (a b) (not (f a b))))
+
+;(defn sort (xs)
+;			(if (empty xs)
+;				xs
+;				(append
+;					(sort (pivot < xs))
+;					(cons (head xs)
+;								(sort (pivot (neg/2 <) xs))))))
+
+(defn piv (h pred t)
+      (filter (cmp pred h) t))
+(defn sort (xs)
+      (if (empty xs)
+        xs
+        (let ((h (head xs))
+              (t (tail xs)))
+          (append
+            (sort (piv h < t))
+            (cons h (sort (piv h (neg/2 <) t)))))))
